@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.charset.Charset;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import zmq.Ctx;
@@ -279,6 +280,24 @@ public class ZMQ
         }
 
         /**
+         * Returns the thread factory used by Pollers in this context.
+         * @return the thref factory to use
+         */
+        public ThreadFactory getPollerThreadFactory()
+        {
+          return ctx.getPollerThreadFactory();
+        }
+
+        /**
+         * Sets the thread factory for Pollers in this context.
+         * @param threadFactory the thread factory to use
+         */
+         public void setPollerThreadFactory(ThreadFactory threadFactory)
+         {
+            ctx.setPollerThreadFactory(threadFactory);
+         }
+
+       /**
          * Set the size of the 0MQ thread pool to handle I/O operations.
          */
         public boolean setIOThreads(int ioThreads)

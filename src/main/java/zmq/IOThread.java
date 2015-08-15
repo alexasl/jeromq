@@ -40,7 +40,7 @@ public class IOThread extends ZObject implements IPollEvents, Closeable
     {
         super(ctx, tid);
         name = "iothread-" + tid;
-        poller = new Poller(name);
+        poller = new Poller(name, ctx.getPollerThreadFactory());
 
         mailbox = new Mailbox(name);
         mailboxHandle = mailbox.getFd();

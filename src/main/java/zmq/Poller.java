@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Poller extends PollerBase implements Runnable
 {
@@ -60,7 +61,9 @@ public class Poller extends PollerBase implements Runnable
     private Thread worker;
     private Selector selector;
     private final String name;
+    private final java.util.concurrent.ThreadFactory threadFactory;
 
+    @Deprecated
     public Poller()
     {
         this("poller");
@@ -68,7 +71,13 @@ public class Poller extends PollerBase implements Runnable
 
     public Poller(String name)
     {
+       this(name, Ctx.DEFAULT_POLLER_THREAD_FACTORY);
+    }
+
+    public Poller(String name, java.util.concurrent.ThreadFactory threadFactory)
+    {
         this.name = name;
+        this.threadFactory = threadFactory;
         stopping = false;
         stopped = false;
 
@@ -166,8 +175,7 @@ public class Poller extends PollerBase implements Runnable
 
     public void start()
     {
-        worker = new Thread(this, name);
-        worker.setDaemon(true);
+        worker = threadFactory.newThread(this);
         worker.start();
     }
 
@@ -175,6 +183,11 @@ public class Poller extends PollerBase implements Runnable
     {
         stopping = true;
         selector.wakeup();
+    }
+
+    public String getName()
+    {
+        return name;
     }
 
     @Override
@@ -290,4 +303,36 @@ public class Poller extends PollerBase implements Runnable
 
         retired.set(true);
     }
+
+   static class ThreadFactory implements java.util.concurrent.ThreadFactory
+   {
+       protected static final AtomicInteger THREAD_NO = new AtomicInteger(0);
+       protected final ThreadGroup threadGroup;
+
+       public ThreadFactory()
+       {
+          SecurityManager sm = System.getSecurityManager();
+          if (sm != null) {
+              threadGroup = sm.getThreadGroup();
+          }
+          else {
+              threadGroup = Thread.currentThread().getThreadGroup();
+          }
+      }
+
+      @Override
+      public Thread newThread(Runnable runnable)
+      {
+          String threadName;
+          if (runnable instanceof Poller) {
+             threadName = ((Poller) runnable).getName();
+          }
+          else {
+             threadName = "poller-" + THREAD_NO.getAndIncrement();
+          }
+          Thread thread = new Thread(threadGroup, runnable, threadName, 0L);
+          thread.setDaemon(true);
+          return thread;
+      }
+   }
 }

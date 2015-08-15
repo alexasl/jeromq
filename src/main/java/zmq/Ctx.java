@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -80,6 +81,10 @@ public class Ctx
 
     //  The reaper thread.
     private Reaper reaper;
+
+    // Thread factory for threads in this context
+    private final AtomicReference<java.util.concurrent.ThreadFactory> pollerThreadFactoryRef;
+    static final java.util.concurrent.ThreadFactory DEFAULT_POLLER_THREAD_FACTORY = new Poller.ThreadFactory();
 
     //  I/O threads.
     private final List<IOThread> ioThreads;
@@ -135,6 +140,9 @@ public class Ctx
         ioThreads = new ArrayList<IOThread>();
         sockets = new ArrayList<SocketBase>();
         endpoints = new HashMap<String, Endpoint>();
+
+        pollerThreadFactoryRef =
+              new AtomicReference<java.util.concurrent.ThreadFactory>(DEFAULT_POLLER_THREAD_FACTORY);
     }
 
     private void destroy() throws IOException
@@ -471,5 +479,15 @@ public class Ctx
             endpointsSync.unlock();
         }
         return endpoint;
+    }
+
+    public java.util.concurrent.ThreadFactory getPollerThreadFactory()
+    {
+        return pollerThreadFactoryRef.get();
+    }
+
+    public void setPollerThreadFactory(java.util.concurrent.ThreadFactory threadFactory)
+    {
+       this.pollerThreadFactoryRef.set(threadFactory);
     }
 }

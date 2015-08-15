@@ -48,7 +48,7 @@ public class Reaper extends ZObject implements IPollEvents, Closeable
         sockets = 0;
         terminating = false;
         name = "reaper-" + tid;
-        poller = new Poller(name);
+        poller = new Poller(name, ctx.getPollerThreadFactory());
 
         mailbox = new Mailbox(name);
 
